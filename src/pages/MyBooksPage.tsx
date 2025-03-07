@@ -1,30 +1,22 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BookGrid from "@/components/books/BookGrid";
 import BookDetailModal from "@/components/books/BookDetailModal";
 import { useAuth } from "@/context/AuthContext";
-import { getBooks, deleteBook } from "@/services/supabaseService";
+import { getBooks, deleteBook, createBook, getTransactions } from "@/services/supabaseService";
 import { Plus, BookOpen } from "lucide-react";
 import AddBookModal from "@/components/books/AddBookModal";
-
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  coverImage: string;
-  isAvailable: boolean;
-  isOwner: boolean;
-  condition: "New" | "Like New" | "Good" | "Fair" | "Poor";
-  rentalPrice: number;
-  description?: string;
-}
+import { Book, BookInsert } from "@/types/books";
+import { supabase } from "@/lib/supabase";
+import { successToast, errorToast } from "@/components/ui/custom-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 const MyBooksPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("my-books");
   const [myBooks, setMyBooks] = useState<Book[]>([]);
   const [borrowedBooks, setBorrowedBooks] = useState<Book[]>([]);
@@ -49,23 +41,17 @@ const MyBooksPage = () => {
     setError("");
 
     try {
-      const { data, error } = await getBooks({ owner_id: user?.id });
+      const { data: books, error } = await getBooks({ owner_id: user?.id });
 
       if (error) throw error;
 
-      if (data) {
-        const transformedBooks = data.map((book: any) => ({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          coverImage:
-            book.cover_image ||
-            "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
-          isAvailable: book.is_available,
-          isOwner: true,
-          condition: book.condition,
-          rentalPrice: book.rental_price,
-          description: book.description,
+      if (books) {
+        const transformedBooks = books.map((book: any) => ({
+          ...book,
+          cover_image: book.cover_image || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
+          rating: book.rating || 0,
+          rental_price: book.rental_price || 0,
+          genre: Array.isArray(book.genre) ? book.genre : []
         }));
 
         setMyBooks(transformedBooks);
@@ -79,23 +65,36 @@ const MyBooksPage = () => {
   };
 
   const fetchBorrowedBooks = async () => {
-    // In a real app, you would fetch books the user has borrowed
-    // For now, we'll use placeholder data
-    setBorrowedBooks([
-      {
-        id: "borrowed-1",
-        title: "The Alchemist",
-        author: "Paulo Coelho",
-        coverImage:
-          "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
-        isAvailable: false,
-        isOwner: false,
-        condition: "Good" as const,
-        rentalPrice: 3,
-        description:
-          "A special 25th anniversary edition of the extraordinary international bestseller, including a new Foreword by Paulo Coelho.",
-      },
-    ]);
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { data: transactions, error: transactionError } = await getTransactions({
+        user_id: user?.id,
+        as_borrower: true,
+        status: "completed",
+      });
+
+      if (transactionError) throw transactionError;
+
+      if (transactions) {
+        // Transform the books from transactions
+        const borrowedBooks = transactions.map((transaction) => ({
+          ...transaction.book,
+          rating: transaction.book.rating || 0,
+          rental_price: transaction.book.rental_price || 0,
+          cover_image: transaction.book.cover_image || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
+          genre: Array.isArray(transaction.book.genre) ? transaction.book.genre : []
+        }));
+
+        setBorrowedBooks(borrowedBooks);
+      }
+    } catch (err) {
+      console.error("Error fetching borrowed books:", err);
+      setError("Failed to load borrowed books. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBookClick = (bookId: string) => {
@@ -110,42 +109,36 @@ const MyBooksPage = () => {
     }
   };
 
-  const handleEditBook = () => {
-    if (selectedBook) {
-      // In a real app, you would open an edit modal
-      console.log("Edit book:", selectedBook);
+  const handleAddBook = async (bookData: BookInsert) => {
+    try {
+      const { data, error } = await createBook({
+        ...bookData,
+        owner_id: user?.id!,
+        status: "available",
+      });
+
+      if (error) throw error;
+
+      successToast({ message: "Book added successfully!" });
+      setShowAddBookModal(false);
+      fetchMyBooks(); // Refresh the list
+    } catch (err: any) {
+      errorToast({ 
+        message: err.message || "Failed to add book. Please try again." 
+      });
     }
   };
 
-  const handleDeleteBook = async () => {
-    if (selectedBook) {
-      try {
-        const { error } = await deleteBook(selectedBook.id);
-
-        if (error) throw error;
-
-        setShowBookDetail(false);
-        fetchMyBooks(); // Refresh the list
-      } catch (err) {
-        console.error("Error deleting book:", err);
-      }
-    }
-  };
-
-  const handleAddBook = async (bookData: any) => {
-    console.log("Add book:", bookData);
-    // In a real app, you would add the book to the database
-    setShowAddBookModal(false);
-    fetchMyBooks(); // Refresh the list
-  };
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-lg text-gray-600">Please log in to view your books.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar
-        isAuthenticated={!!user}
-        username={user?.user_metadata?.name || "User"}
-      />
-
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">My Books</h1>
@@ -192,26 +185,8 @@ const MyBooksPage = () => {
         <BookDetailModal
           open={showBookDetail}
           onOpenChange={setShowBookDetail}
-          book={
-            {
-              ...selectedBook,
-              owner: {
-                id: user?.id || "",
-                name: user?.user_metadata?.name || "You",
-                avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=you",
-                rating: 4.5,
-                booksShared: myBooks.length,
-              },
-              location: "Your Location",
-              distance: 0,
-              publishedYear: 2020,
-              genre: "Fiction",
-              pages: 200,
-              isbn: "1234567890",
-            } as any
-          }
-          onEdit={handleEditBook}
-          onDelete={handleDeleteBook}
+          book={selectedBook}
+          onBookUpdated={fetchMyBooks}
         />
       )}
 

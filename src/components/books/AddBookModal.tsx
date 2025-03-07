@@ -1,320 +1,109 @@
-import React, { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState, useCallback } from "react";
+import { BookFormData } from "@/types/books";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
-} from "../ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { createBook } from "@/services/supabaseService";
-import { useAuth } from "@/context/AuthContext";
+} from "@/components/ui/dialog";
+import { BookForm } from "./BookForm";
+import { AlertCircle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AddBookModalProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  onSubmit?: (data: any) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: Partial<BookFormData>) => Promise<void>;
 }
 
-const bookSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  author: z.string().min(1, "Author is required"),
-  description: z.string().optional(),
-  cover_image: z.string().optional(),
-  condition: z.enum(["New", "Like New", "Good", "Fair", "Poor"]),
-  rental_price: z.coerce.number().min(0, "Price must be a positive number"),
-  genre: z.string().optional(),
-  published_year: z.coerce.number().optional(),
-  pages: z.coerce.number().optional(),
-  isbn: z.string().optional(),
-  location: z.string().optional(),
-});
+const AddBookModal = ({ open, onOpenChange, onSubmit }: AddBookModalProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-type BookFormValues = z.infer<typeof bookSchema>;
-
-const AddBookModal = ({
-  open = false,
-  onOpenChange = () => {},
-  onSubmit = () => {},
-}: AddBookModalProps) => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<BookFormValues>({
-    resolver: zodResolver(bookSchema),
-    defaultValues: {
-      title: "",
-      author: "",
-      description: "",
-      cover_image: "",
-      condition: "Good",
-      rental_price: 5,
-      genre: "",
-      published_year: undefined,
-      pages: undefined,
-      isbn: "",
-      location: "",
-    },
-  });
-
-  const handleSubmit = async (data: BookFormValues) => {
-    if (!user) {
-      alert("You must be logged in to add a book");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Add default cover image if none provided
-      if (!data.cover_image) {
-        data.cover_image =
-          "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000";
+  // Reset state when modal opens/closes
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    if (!isSubmitting) {
+      onOpenChange(isOpen);
+      if (!isOpen) {
+        // Reset state when closing
+        setError(null);
+        setSuccess(false);
       }
+    }
+  }, [isSubmitting, onOpenChange]);
 
-      const bookData = {
-        ...data,
-        owner_id: user.id,
-        is_available: true,
+  const handleSubmit = async (data: BookFormData) => {
+    try {
+      setError(null);
+      setSuccess(false);
+      setIsSubmitting(true);
+      
+      // Prepare book data with required status field
+      const bookData: Partial<BookFormData> = {
+        title: data.title,
+        author: data.author,
+        description: data.description || null,
+        cover_image: data.cover_image || null,
+        condition: data.condition,
+        genre: Array.isArray(data.genre) ? data.genre : [],
+        rental_price: data.rental_price || null,
+        isbn: data.isbn || null,
+        status: data.status // This will now always be set due to the default value
       };
-
-      const { error } = await createBook(bookData);
-
-      if (error) throw error;
-
-      onSubmit(bookData);
-      form.reset();
-      onOpenChange(false);
+      
+      await onSubmit(bookData);
+      
+      setSuccess(true);
+      // Close modal after success with a slight delay
+      setTimeout(() => {
+        onOpenChange(false);
+        setSuccess(false);
+      }, 1500);
     } catch (error) {
-      console.error("Error adding book:", error);
-      alert("Failed to add book. Please try again.");
+      console.error("Error submitting form:", error);
+      setError(error instanceof Error ? error.message : "Failed to add book. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            Add a New Book
-          </DialogTitle>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b">
+          <DialogTitle className="text-2xl font-bold">Share Your Book</DialogTitle>
+          <DialogDescription className="text-base mt-2">
+            Fill in the details about your book. The more information you provide, the easier it will be for others to find and borrow your book.
+          </DialogDescription>
         </DialogHeader>
-
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title*</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Book title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="author"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Author*</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Author name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="condition"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Condition*</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select condition" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="New">New</SelectItem>
-                        <SelectItem value="Like New">Like New</SelectItem>
-                        <SelectItem value="Good">Good</SelectItem>
-                        <SelectItem value="Fair">Fair</SelectItem>
-                        <SelectItem value="Poor">Poor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="rental_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rental Price ($/week)*</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" step="0.5" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="genre"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Genre</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Fiction, Mystery" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="published_year"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Published Year</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="e.g. 2020" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="pages"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pages</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="e.g. 300" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isbn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ISBN</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. 9781234567897" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. New York, NY" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="cover_image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cover Image URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Brief description of the book..."
-                      className="resize-none"
-                      rows={4}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter className="pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Adding..." : "Add Book"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        
+        {error && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert className="mt-4 bg-green-50 text-green-700 border-green-200">
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>Book added successfully!</AlertDescription>
+          </Alert>
+        )}
+        
+        <BookForm
+          onSubmit={handleSubmit}
+          onCancel={() => !isSubmitting && handleOpenChange(false)}
+          isLoading={isSubmitting}
+          defaultValues={{ status: "available" }}
+        />
+        
+        <DialogFooter className="text-xs text-muted-foreground mt-4 pt-2 border-t">
+          All fields marked with <span className="text-destructive">*</span> are required
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

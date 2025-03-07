@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, MapPin } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ const signupSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
+    location: z.string().min(2, "Location must be at least 2 characters"),
     password: z
       .string()
       .min(6, "Password must be at least 6 characters")
@@ -72,6 +73,7 @@ const AuthModal = ({
     defaultValues: {
       name: "",
       email: "",
+      location: "",
       password: "",
       confirmPassword: "",
     },
@@ -250,6 +252,27 @@ const AuthModal = ({
                         <FormControl>
                           <Input
                             placeholder="your.email@example.com"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={signupForm.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <FormControl>
+                          <Input
+                            placeholder="City, Country"
                             className="pl-10"
                             {...field}
                           />

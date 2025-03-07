@@ -31,6 +31,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Badge } from "../ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 interface NavbarProps {
   isAuthenticated?: boolean;
@@ -119,6 +120,7 @@ const Navbar = ({
               to="/"
               className={`text-sm font-medium transition-colors relative group ${isActive("/") ? "text-blue-600" : "hover:text-blue-600"}`}
             >
+              <Home className="h-4 w-4 inline-block mr-1" />
               Home
               <span
                 className={`absolute bottom-0 left-0 h-0.5 bg-blue-600 transition-all ${isActive("/") ? "w-full" : "w-0 group-hover:w-full"}`}
@@ -128,6 +130,7 @@ const Navbar = ({
               to="/books"
               className={`text-sm font-medium transition-colors relative group ${isActive("/books") ? "text-blue-600" : "hover:text-blue-600"}`}
             >
+              <BookOpen className="h-4 w-4 inline-block mr-1" />
               Browse Books
               <span
                 className={`absolute bottom-0 left-0 h-0.5 bg-blue-600 transition-all ${isActive("/books") ? "w-full" : "w-0 group-hover:w-full"}`}
@@ -139,6 +142,7 @@ const Navbar = ({
                   to="/my-books"
                   className={`text-sm font-medium transition-colors relative group ${isActive("/my-books") ? "text-blue-600" : "hover:text-blue-600"}`}
                 >
+                  <Book className="h-4 w-4 inline-block mr-1" />
                   My Books
                   <span
                     className={`absolute bottom-0 left-0 h-0.5 bg-blue-600 transition-all ${isActive("/my-books") ? "w-full" : "w-0 group-hover:w-full"}`}
@@ -148,6 +152,7 @@ const Navbar = ({
                   to="/transactions"
                   className={`text-sm font-medium transition-colors relative group ${isActive("/transactions") ? "text-blue-600" : "hover:text-blue-600"}`}
                 >
+                  <RefreshCw className="h-4 w-4 inline-block mr-1" />
                   Transactions
                   <span
                     className={`absolute bottom-0 left-0 h-0.5 bg-blue-600 transition-all ${isActive("/transactions") ? "w-full" : "w-0 group-hover:w-full"}`}
@@ -157,6 +162,7 @@ const Navbar = ({
                   to="/dashboard"
                   className={`text-sm font-medium transition-colors relative group ${isActive("/dashboard") ? "text-blue-600" : "hover:text-blue-600"}`}
                 >
+                  <BarChart3 className="h-4 w-4 inline-block mr-1" />
                   Dashboard
                   <span
                     className={`absolute bottom-0 left-0 h-0.5 bg-blue-600 transition-all ${isActive("/dashboard") ? "w-full" : "w-0 group-hover:w-full"}`}
@@ -349,104 +355,51 @@ const Navbar = ({
             </div>
 
             {/* Mobile Navigation Links */}
-            <div className="flex-1 overflow-auto">
-              <div className="p-4 space-y-4">
-                <Link
-                  to="/"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  <Home className="h-5 w-5" />
-                  <span className="font-medium">Home</span>
-                </Link>
-                <Link
-                  to="/books"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  <BookOpen className="h-5 w-5" />
-                  <span className="font-medium">Browse Books</span>
-                </Link>
-                {isAuthenticated ? (
-                  <>
-                    <Link
-                      to="/my-books"
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <Book className="h-5 w-5" />
-                      <span className="font-medium">My Books</span>
-                    </Link>
-                    <Link
-                      to="/transactions"
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <RefreshCw className="h-5 w-5" />
-                      <span className="font-medium">Transactions</span>
-                    </Link>
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <BarChart3 className="h-5 w-5" />
-                      <span className="font-medium">Dashboard</span>
-                    </Link>
-                    <Link
-                      to="/favorites"
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <Heart className="h-5 w-5" />
-                      <span className="font-medium">Favorites</span>
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <User className="h-5 w-5" />
-                      <span className="font-medium">Profile</span>
-                    </Link>
-                    <div className="border-t my-4"></div>
-                    <button
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground w-full text-left"
-                      onClick={() => {
-                        handleLogout();
-                        setShowMobileMenu(false);
-                      }}
-                    >
-                      <LogIn className="h-5 w-5 rotate-180" />
-                      <span className="font-medium">Log out</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="border-t my-4"></div>
-                    <button
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground w-full text-left"
-                      onClick={() => {
-                        onLogin();
-                        setShowMobileMenu(false);
-                      }}
-                    >
-                      <LogIn className="h-5 w-5" />
-                      <span className="font-medium">Log in</span>
-                    </button>
-                    <button
-                      className="flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white w-full text-left hover:bg-blue-700"
-                      onClick={() => {
-                        onSignup();
-                        setShowMobileMenu(false);
-                      }}
-                    >
-                      <User className="h-5 w-5" />
-                      <span className="font-medium">Sign up</span>
-                    </button>
-                  </>
-                )}
-              </div>
+            <div className="p-4 space-y-4">
+              <Link
+                to="/"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <Home className="h-5 w-5" />
+                <span className="font-medium">Home</span>
+              </Link>
+              <Link
+                to="/books"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <BookOpen className="h-5 w-5" />
+                <span className="font-medium">Browse Books</span>
+              </Link>
+              {isAuthenticated && (
+                <>
+                  <Link
+                    to="/my-books"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Book className="h-5 w-5" />
+                    <span className="font-medium">My Books</span>
+                  </Link>
+                  <Link
+                    to="/transactions"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <RefreshCw className="h-5 w-5" />
+                    <span className="font-medium">Transactions</span>
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                    <span className="font-medium">Dashboard</span>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Add Book Button - Only for authenticated users */}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -337,11 +337,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar
-        isAuthenticated={!!user}
-        username={user?.user_metadata?.name || "Admin"}
-      />
-
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
@@ -518,14 +513,12 @@ const AdminDashboard = () => {
                           <TableCell>{book.author}</TableCell>
                           <TableCell>
                             <Badge
-                              variant={
-                                book.is_available ? "success" : "secondary"
-                              }
-                              className={
-                                book.is_available
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }
+                              variant={book.is_available ? "outline" : "secondary"}
+                              className={cn(
+                                book.is_available 
+                                  ? "bg-green-100 text-green-800 border-green-200" 
+                                  : ""
+                              )}
                             >
                               {book.is_available ? "Available" : "Unavailable"}
                             </Badge>
@@ -656,14 +649,12 @@ const AdminDashboard = () => {
                         <TableCell>{book.condition}</TableCell>
                         <TableCell>
                           <Badge
-                            variant={
-                              book.is_available ? "success" : "secondary"
-                            }
-                            className={
-                              book.is_available
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }
+                            variant={book.is_available ? "outline" : "secondary"}
+                            className={cn(
+                              book.is_available 
+                                ? "bg-green-100 text-green-800 border-green-200" 
+                                : ""
+                            )}
                           >
                             {book.is_available ? "Available" : "Unavailable"}
                           </Badge>
@@ -760,20 +751,22 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={
-                              transaction.status === "approved"
-                                ? "bg-green-100 text-green-800"
-                                : transaction.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : transaction.status === "completed"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : transaction.status === "rejected"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-gray-100 text-gray-800"
-                            }
+                            variant={status === "Approved" ? "outline" : status === "Pending" ? "secondary" : "destructive"}
+                            className={cn(
+                              "px-2 py-1",
+                              status === "Approved" && "border-green-200 bg-green-50 text-green-700",
+                              status === "Pending" && "border-yellow-200 bg-yellow-50 text-yellow-700",
+                              status === "Rejected" && "border-red-200 bg-red-50 text-red-700"
+                            )}
                           >
-                            {transaction.status.charAt(0).toUpperCase() +
-                              transaction.status.slice(1)}
+                            {status === "Approved" ? (
+                              <CheckCircle size={14} className="mr-1" />
+                            ) : status === "Pending" ? (
+                              <Clock size={14} className="mr-1" />
+                            ) : (
+                              <XCircle size={14} className="mr-1" />
+                            )}
+                            {status}
                           </Badge>
                         </TableCell>
                         <TableCell>

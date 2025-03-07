@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import BookCard from "./BookCard";
+import { Book } from "@/types/books";
+import BookCard from "@/components/books/BookCard";
 import { Button } from "../ui/button";
 import {
   Pagination,
@@ -10,23 +11,11 @@ import {
   PaginationPrevious,
 } from "../ui/pagination";
 import { Skeleton } from "../ui/skeleton";
-import { BookOpen, RefreshCw, Grid3X3, List } from "lucide-react";
-
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  coverImage: string;
-  isAvailable: boolean;
-  isOwner: boolean;
-  condition: "New" | "Like New" | "Good" | "Fair" | "Poor";
-  rentalPrice: number;
-  genre?: string;
-  rating?: number;
-}
+import { BookOpen, RefreshCw, Grid3X3, List, Star, Clock, Repeat } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface BookGridProps {
-  books?: Book[];
+  books: Book[];
   isLoading?: boolean;
   error?: string;
   totalPages?: number;
@@ -35,89 +24,12 @@ interface BookGridProps {
   onBookClick?: (bookId: string) => void;
   onRentalRequest?: (bookId: string) => void;
   onExchangeProposal?: (bookId: string) => void;
+  onEdit?: (book: Book) => void;
+  onDelete?: (book: Book) => void;
 }
 
 const BookGrid = ({
-  books = [
-    {
-      id: "1",
-      title: "The Great Gatsby",
-      author: "F. Scott Fitzgerald",
-      coverImage:
-        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
-      isAvailable: true,
-      isOwner: false,
-      condition: "Good" as const,
-      rentalPrice: 5,
-      genre: "Classic Literature",
-      rating: 4.7,
-    },
-    {
-      id: "2",
-      title: "To Kill a Mockingbird",
-      author: "Harper Lee",
-      coverImage:
-        "https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=1000",
-      isAvailable: true,
-      isOwner: true,
-      condition: "Like New" as const,
-      rentalPrice: 4,
-      genre: "Classic Literature",
-      rating: 4.9,
-    },
-    {
-      id: "3",
-      title: "1984",
-      author: "George Orwell",
-      coverImage:
-        "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=1000",
-      isAvailable: false,
-      isOwner: false,
-      condition: "Fair" as const,
-      rentalPrice: 3,
-      genre: "Science Fiction",
-      rating: 4.6,
-    },
-    {
-      id: "4",
-      title: "Pride and Prejudice",
-      author: "Jane Austen",
-      coverImage:
-        "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1000",
-      isAvailable: true,
-      isOwner: false,
-      condition: "New" as const,
-      rentalPrice: 6,
-      genre: "Romance",
-      rating: 4.8,
-    },
-    {
-      id: "5",
-      title: "The Hobbit",
-      author: "J.R.R. Tolkien",
-      coverImage:
-        "https://images.unsplash.com/photo-1629992101753-56d196c8aabb?q=80&w=1000",
-      isAvailable: true,
-      isOwner: false,
-      condition: "Good" as const,
-      rentalPrice: 5,
-      genre: "Fantasy",
-      rating: 4.9,
-    },
-    {
-      id: "6",
-      title: "Harry Potter and the Sorcerer's Stone",
-      author: "J.K. Rowling",
-      coverImage:
-        "https://images.unsplash.com/photo-1626618012641-bfbca5a31239?q=80&w=1000",
-      isAvailable: true,
-      isOwner: false,
-      condition: "Good" as const,
-      rentalPrice: 4,
-      genre: "Fantasy",
-      rating: 4.8,
-    },
-  ],
+  books,
   isLoading = false,
   error = "",
   totalPages = 5,
@@ -126,7 +38,10 @@ const BookGrid = ({
   onBookClick = () => {},
   onRentalRequest = () => {},
   onExchangeProposal = () => {},
+  onEdit,
+  onDelete,
 }: BookGridProps) => {
+  const { user } = useAuth();
   // State for handling loading more books (for skeleton display)
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -230,114 +145,130 @@ const BookGrid = ({
       >
         {isLoading
           ? renderSkeletons()
-          : books.map((book) => (
-              <div
-                key={book.id}
-                className={viewMode === "list" ? "w-full" : ""}
-              >
-                {viewMode === "grid" ? (
-                  <BookCard
-                    id={book.id}
-                    title={book.title}
-                    author={book.author}
-                    coverImage={book.coverImage}
-                    isAvailable={book.isAvailable}
-                    isOwner={book.isOwner}
-                    condition={book.condition}
-                    rentalPrice={book.rentalPrice}
-                    genre={book.genre}
-                    rating={book.rating}
-                    onClick={() => onBookClick(book.id)}
-                    onRentalRequest={() => onRentalRequest(book.id)}
-                    onExchangeProposal={() => onExchangeProposal(book.id)}
-                  />
-                ) : (
-                  <div className="flex bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-                    <img
-                      src={book.coverImage}
-                      alt={book.title}
-                      className="w-24 h-36 object-cover rounded-md mr-4"
+          : books.map((book) => {
+              const genres = Array.isArray(book.genre) ? book.genre : [];
+              return (
+                <div
+                  key={book.id}
+                  className={viewMode === "list" ? "w-full" : ""}
+                >
+                  {viewMode === "grid" ? (
+                    <BookCard 
+                      book={{...book, genre: genres}}
+                      onClick={() => onBookClick(book.id)}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
                     />
-                    <div className="flex-grow">
-                      <h3 className="font-bold text-lg">{book.title}</h3>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {book.author}
-                      </p>
-                      <div className="flex items-center gap-4 mb-2">
-                        <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
-                          {book.genre}
-                        </span>
-                        <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
-                          {book.condition}
-                        </span>
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                          ${book.rentalPrice}/week
-                        </span>
+                  ) : (
+                    <div className="flex bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100">
+                      <img
+                        src={book.cover_image}
+                        alt={book.title}
+                        className="w-24 h-36 object-cover rounded-md mr-4"
+                      />
+                      <div className="flex-grow">
+                        <h3 className="font-bold text-lg">{book.title}</h3>
+                        <p className="text-sm text-gray-500 mb-2">{book.author}</p>
+                        <div className="flex items-center gap-4 mb-2">
+                          <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
+                            {Array.isArray(genres) ? genres.join(", ") : ""}
+                          </span>
+                          <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
+                            {book.condition}
+                          </span>
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                            ${book.rental_price}/week
+                          </span>
+                        </div>
+                        <div className="flex items-center mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={14}
+                              className={
+                                i < Math.floor(book.rating || 0)
+                                  ? "text-yellow-500 fill-yellow-500"
+                                  : "text-gray-300"
+                              }
+                            />
+                          ))}
+                          <span className="text-xs ml-1">{book.rating}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => onBookClick(book.id)}
+                          >
+                            View Details
+                          </Button>
+                          {book.status === "available" && book.owner_id !== user?.id && (
+                            <>
+                              <Button
+                                variant="accent"
+                                size="sm"
+                                onClick={() => onRentalRequest(book.id)}
+                              >
+                                <Clock size={16} className="mr-1" />
+                                Rent
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onExchangeProposal(book.id)}
+                              >
+                                <Repeat size={16} className="mr-1" />
+                                Exchange
+                              </Button>
+                            </>
+                          )}
+                          {book.owner_id === user?.id && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEdit?.(book);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDelete?.(book);
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center mb-4">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={14}
-                            className={
-                              i < Math.floor(book.rating || 0)
-                                ? "text-yellow-500 fill-yellow-500"
-                                : "text-gray-300"
-                            }
-                          />
-                        ))}
-                        <span className="text-xs ml-1">{book.rating}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => onBookClick(book.id)}
-                        >
-                          View Details
-                        </Button>
-                        {!book.isOwner && book.isAvailable && (
-                          <>
-                            <Button
-                              variant="accent"
-                              size="sm"
-                              onClick={() => onRentalRequest(book.id)}
-                            >
-                              <Clock size={16} className="mr-1" />
-                              Rent
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onExchangeProposal(book.id)}
-                            >
-                              <Repeat size={16} className="mr-1" />
-                              Exchange
-                            </Button>
-                          </>
+                      <div className="flex flex-col items-end gap-2">
+                        {book.status === "available" ? (
+                          <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                            Available
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                            {book.status}
+                          </span>
+                        )}
+                        {book.owner_id === user?.id && (
+                          <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                            Your Book
+                          </span>
                         )}
                       </div>
                     </div>
-                    <div className="ml-4">
-                      {book.isAvailable ? (
-                        <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          Available
-                        </span>
-                      ) : (
-                        <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                          Unavailable
-                        </span>
-                      )}
-                      {book.isOwner && (
-                        <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                          Your Book
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
         {loadingMore && renderSkeletons()}
       </div>
 

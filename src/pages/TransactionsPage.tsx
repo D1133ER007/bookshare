@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,16 +98,12 @@ const TransactionsPage = () => {
           book: {
             id: rental.book.id,
             title: rental.book.title,
-            coverImage:
-              rental.book.cover_image ||
-              "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
+            coverImage: rental.book.cover_image || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
           },
           user: {
-            id: rental.requester.id,
-            name: rental.requester.name,
-            avatar:
-              rental.requester.avatar_url ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${rental.requester.id}`,
+            id: rental.borrower.id,
+            name: rental.borrower.name,
+            avatar: rental.borrower.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${rental.borrower.id}`,
           },
           details: {
             startDate: rental.start_date,
@@ -126,16 +121,12 @@ const TransactionsPage = () => {
           book: {
             id: rental.book.id,
             title: rental.book.title,
-            coverImage:
-              rental.book.cover_image ||
-              "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
+            coverImage: rental.book.cover_image || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1000",
           },
           user: {
-            id: rental.owner.id,
-            name: rental.owner.name,
-            avatar:
-              rental.owner.avatar_url ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${rental.owner.id}`,
+            id: rental.lender.id,
+            name: rental.lender.name,
+            avatar: rental.lender.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${rental.lender.id}`,
           },
           details: {
             startDate: rental.start_date,
@@ -573,11 +564,6 @@ const TransactionsPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar
-        isAuthenticated={!!user}
-        username={user?.user_metadata?.name || "User"}
-      />
-
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Transactions</h1>
 
